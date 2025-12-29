@@ -1,0 +1,237 @@
+[
+    {
+        "id": "dbebeb7e05168c08",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "0decf1097b8d2611",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "a49a3d61af2dce54",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://influxdb:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "d1f820a66c55049b",
+        "type": "telegram bot",
+        "botname": "MyHydroponicsBot",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "0a10c456a7897026",
+        "type": "global-config",
+        "env": [],
+        "modules": {}
+    },
+    {
+        "id": "87be3789d7e20537",
+        "type": "mqtt in",
+        "z": "dbebeb7e05168c08",
+        "name": "",
+        "topic": "/agriculture/+/+/#",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "0decf1097b8d2611",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 120,
+        "y": 280,
+        "wires": [
+            [
+                "a3d8aef7a68b5a60"
+            ]
+        ]
+    },
+    {
+        "id": "34c3ffc3cdad1d67",
+        "type": "debug",
+        "z": "dbebeb7e05168c08",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 900,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "a3d8aef7a68b5a60",
+        "type": "json",
+        "z": "dbebeb7e05168c08",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 310,
+        "y": 280,
+        "wires": [
+            [
+                "d5d90a507b31e41d"
+            ]
+        ]
+    },
+    {
+        "id": "4804bbb78a7dbe08",
+        "type": "influxdb out",
+        "z": "dbebeb7e05168c08",
+        "influxdb": "a49a3d61af2dce54",
+        "name": "influxDB",
+        "measurement": "environment_readings",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "iot_org",
+        "bucket": "hydroponics_data",
+        "x": 780,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "d5d90a507b31e41d",
+        "type": "function",
+        "z": "dbebeb7e05168c08",
+        "name": "Data_Validator_Splitter",
+        "func": "// --- 1. JSON Parse and Validation ---\nif (typeof msg.payload === \"string\") {\n    try { \n        msg.payload = JSON.parse(msg.payload); \n    } catch (e) { \n        node.error(\"Invalid JSON received from MQTT\", msg); \n        return [null, null]; \n    }\n}\n\n// --- 2. Required fields check ---\nif (!msg.payload || msg.payload.value == null || !msg.payload.location || msg.payload.timestamp == null || !msg.payload.sensor_id) {\n    node.warn(\"Missing critical required fields.\");\n    return [null, null];\n}\n\nconst value = parseFloat(msg.payload.value); \nconst ts_ms = Number(msg.payload.timestamp);\n\nif (isNaN(value) || isNaN(ts_ms)) {\n    node.warn(\"Invalid numerical value or timestamp found.\");\n    return [null, null];\n}\n\n// --- 3. Extract sensor info from topic ---\nconst parts = (msg.topic || \"\").split('/').filter(x => x.trim() !== \"\");\nconst domain = parts[0] || \"unknown\";\nconst sensor_type = parts[2] || \"unknown\"; \n\n// --- 4. Threshold table per sensor type ---\nconst THRESHOLDS = {\n    temperature: { min: 18.0, max: 27.0 },\n    humidity: { min: 40.0, max: 60.0 },\n    water_ph: { min: 5.5, max: 6.5 },\n    ec: { min: 1.5, max: 2.5 },\n    water_temperature: { min: 18.0, max: 24.0 },\n    light: { min: 600, max: 1200 }\n};\n\n// --- 5. Check if value exceeds thresholds ---\nlet alertDataMsg = null;\nconst threshold = THRESHOLDS[sensor_type];\n\nif (threshold && (value < threshold.min || value > threshold.max)) {\n    alertDataMsg = {\n        payload: {\n            domain: \"Smart Agriculture\",\n            sensor: sensor_type,\n            sensor_id: msg.payload.sensor_id,\n            location: msg.payload.location,\n            value: value,\n            min: threshold.min,\n            max: threshold.max,\n            timestamp: new Date().toISOString(),\n            alert: value < threshold.min ? \"below_min\" : \"above_max\"\n        }\n    };\n}\n\n// --- 6. Prepare InfluxDB payload ---\nconst influxPayload = [\n    { value: value, time: ts_ms }, // Fields\n    { sensor_type: sensor_type, location: msg.payload.location, sensor_id: msg.payload.sensor_id, domain: domain } // Tags\n];\n\nmsg.payload = influxPayload;\nmsg.measurement = \"environment_readings\";\n\n// Output 1: InfluxDB data\n// Output 2: alert data (null if within thresholds)\nreturn [msg, alertDataMsg];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 280,
+        "wires": [
+            [
+                "4804bbb78a7dbe08",
+                "4475a33436a24cdc"
+            ],
+            [
+                "9e9fc70f549da505"
+            ]
+        ]
+    },
+    {
+        "id": "4475a33436a24cdc",
+        "type": "debug",
+        "z": "dbebeb7e05168c08",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "9cb6d9c58703b7d2",
+        "type": "telegram sender",
+        "z": "dbebeb7e05168c08",
+        "name": "Alert Via Telegram",
+        "bot": "d1f820a66c55049b",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 930,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9e9fc70f549da505",
+        "type": "function",
+        "z": "dbebeb7e05168c08",
+        "name": "Telegram_Formatter_v1",
+        "func": "// Function Node 2: Telegram Formatting (Input from Function 1, Output to Telegram Sender)\n\nconst CHAT_ID = 5525573380; // REPLACE with your actual Telegram Chat ID\nlet alertPayload = msg.payload;\n\nif (!alertPayload) {\n    // No alert, do nothing\n    return null;\n}\n\n// Determine human-readable alert description\nlet conditionString = \"\";\nlet detailsString = \"\";\n\nif (alertPayload.alert === \"above_max\") {\n    conditionString = `Value is ${alertPayload.value} (Threshold > ${alertPayload.max})`;\n    detailsString = `Sensor exceeded maximum threshold. Immediate action may be required.`;\n} else if (alertPayload.alert === \"below_min\") {\n    conditionString = `Value is ${alertPayload.value} (Threshold < ${alertPayload.min})`;\n    detailsString = `Sensor fell below minimum threshold. Immediate action may be required.`;\n} else {\n    // Unknown alert type\n    conditionString = `Value is ${alertPayload.value} (Threshold unknown)`;\n    detailsString = `Check sensor readings.`;\n}\n\n// Construct the final HTML-formatted message\n// CORRECTED: The closing tag is </b> (slash BEFORE the 'b')\nlet telegramMessage = `<b>HYDRO ALERT - CRITICAL</b> \\n\\n`;\ntelegramMessage += `<b>DOMAIN:</b> ${alertPayload.domain}\\n`;\ntelegramMessage += `<b>LOCATION:</b> ${alertPayload.location}\\n`;\ntelegramMessage += `<b>SENSOR:</b> ${alertPayload.sensor}\\n`;\ntelegramMessage += `<b>SENSOR_ID:</b> ${alertPayload.sensor_id}\\n`;\ntelegramMessage += `<b>CONDITION:</b> ${conditionString}\\n`;\ntelegramMessage += `<b>DETAILS:</b> ${detailsString}\\n`;\n// Note: I've removed the extra underscores here, as <i> is enough for italics\n// CORRECTED: The closing tag is </i> (slash BEFORE the 'i')\ntelegramMessage += `<i>Time:  ${alertPayload.timestamp.substring(11, 19)} UTC</i>`;\n\n// Build the payload for Telegram Sender node\nmsg.payload = {\n    chatId: CHAT_ID,\n    type: \"message\",\n    content: telegramMessage,\n    options: {\n        parse_mode: 'HTML' // This is essential for the tags to work\n    }\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 380,
+        "wires": [
+            [
+                "9cb6d9c58703b7d2",
+                "34c3ffc3cdad1d67"
+            ]
+        ]
+    }
+]
