@@ -180,3 +180,17 @@ sudo chmod -R u+rw ./grafana
 
 ## Gauge Dashboard
 ![Gauge Dashboard](images/Gauge_dashboard.png)
+
+
+## Important Note on Credentials & Security
+
+This project was developed for **academic and local demonstration purposes** as part of the *Software Engineering for the Internet of Things* course.
+
+To ensure the system can be easily executed and evaluated, **default credentials and tokens are included in the configuration files**. These credentials are intended **only for local testing** and **must not be used in production environments**.
+
+All services run on `localhost` and are **not exposed to public networks**.
+
+### For Real-World Deployments
+- Credentials should be stored using **environment variables** or **secret management tools**
+- Authentication details should **never be committed to version control**
+- Network access should be **restricted and secured**
