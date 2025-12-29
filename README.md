@@ -174,14 +174,6 @@ sudo chmod -R u+rw ./grafana
 
 ---
 
-# Examples from Grafna Dashboards
-## Time series Dashboard
-![Time Series Dashcboard](images/Timeseries_dashboard.png)
-
-## Gauge Dashboard
-![Gauge Dashboard](images/Gauge_dashboard.png)
-
-
 ## Important Note on Credentials & Security
 
 This project was developed for **academic and local demonstration purposes** as part of the *Software Engineering for the Internet of Things* course.
@@ -194,3 +186,14 @@ All services run on `localhost` and are **not exposed to public networks**.
 - Credentials should be stored using **environment variables** or **secret management tools**
 - Authentication details should **never be committed to version control**
 - Network access should be **restricted and secured**
+
+---
+
+# Examples from Grafna Dashboards
+## Time series Dashboard
+![Time Series Dashcboard](images/Timeseries_dashboard.png)
+
+## Gauge Dashboard
+![Gauge Dashboard](images/Gauge_dashboard.png)
+
+
