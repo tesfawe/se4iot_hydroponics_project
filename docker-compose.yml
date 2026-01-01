@@ -1,14 +1,45 @@
-version: '3.7'
 services:
 
   mosquitto:
     image: eclipse-mosquitto
     container_name: mosquitto
     ports:
-      - "1883:1883" 
+      - "${MQTT_PORT}:1883"
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
+    restart: always
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "${INFLUX_PORT}:8086"
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USERNAME}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN}
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning  # optional if provisioning datasources
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    depends_on:
+      - influxdb
     restart: always
 
   node-red:
@@ -21,50 +52,39 @@ services:
       - "1880:1880"
     volumes:
       - ./node-red/data:/data
-    links:
+    env_file:
+      - .env
+    environment:
+      MQTT_HOST: ${MQTT_HOST}
+      MQTT_PORT: ${MQTT_PORT}
+      MQTT_USER: ${MQTT_USER}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      INFLUX_URL: ${INFLUX_URL}
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
+      INFLUX_ORG: ${INFLUX_ORG}
+      INFLUX_BUCKET: ${INFLUX_BUCKET}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+    depends_on:
       - mosquitto
       - influxdb
     restart: always
 
-  influxdb:
-    image: influxdb:2.7
-    container_name: influxdb
-    ports:
-      - "8086:8086"
-    volumes:
-      - ./influxdb/data:/var/lib/influxdb2
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=iot_user
-      - DOCKER_INFLUXDB_INIT_PASSWORD=iot_password
-      - DOCKER_INFLUXDB_INIT_ORG=iot_org
-      - DOCKER_INFLUXDB_INIT_BUCKET=hydroponics_data
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=super_secret_token 
-    restart: always
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./grafana/data:/var/lib/grafana
-    links:
-      - influxdb
-    restart: always
-
   simulator:
-    build: 
-      context: ./sensor-simulator/ 
+    build:
+      context: ./sensor-simulator/
     container_name: python_simulator
     volumes:
       - ./sensor-simulator/config.yaml:/app/config.yaml:ro
-    links:
-      - mosquitto 
-    profiles: ["manual"] # Only start when explicitly specified
+    environment:
+      MQTT_HOST: ${MQTT_HOST}
+      MQTT_PORT: ${MQTT_PORT}
+      MQTT_USER: ${MQTT_USER}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      PUBLISH_INTERVAL: ${PUBLISH_INTERVAL}
+      DOMAIN: ${DOMAIN}
+      CONFIG_FILE: ${CONFIG_FILE}
+    depends_on:
+      - mosquitto
+    profiles: ["manual"]  # Only start when explicitly specified
 
- 
-
-
-
-  
