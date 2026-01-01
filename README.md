@@ -74,8 +74,8 @@ docker-compose --profile manual start simulator
 Ensure proper permissions (only if necessary):
 
 ```bash
-sudo chown -R 1000:1000 ./data
-sudo chmod -R u+rw ./data
+sudo chown -R 1000:1000 ./node-red/data
+sudo chmod -R u+rw ./node-red/data
 ```
 ---
 
@@ -165,8 +165,8 @@ docker-compose up -d --build
 - Node-RED / Grafana permissions (only if necessary):
 
 ```bash
-sudo chown -R 1000:1000 ./data
-sudo chmod -R u+rw ./data
+sudo chown -R 1000:1000 ./node-red/data
+sudo chmod -R u+rw ./node-red/data
 
 sudo chown -R 472:472 ./grafana
 sudo chmod -R u+rw ./grafana
