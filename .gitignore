@@ -14,6 +14,12 @@ flows_cred.json.backup
 # IfluxDB data files
 influxdb/data/
 
+#Grafana data files
+grafana/data/csv/
+grafana/data/plugins/
+grafana/data/png/
+grafana/data/pdf/
+
 package-lock.json
 work-log.txt
 
