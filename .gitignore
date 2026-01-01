@@ -11,6 +11,9 @@ node_modules/
 flows_cred.json
 flows_cred.json.backup
 
+# IfluxDB data files
+influxdb/data/
+
 package-lock.json
 work-log.txt
 
