@@ -24,3 +24,4 @@ package-lock.json
 work-log.txt
 
 .env
+!.env.example

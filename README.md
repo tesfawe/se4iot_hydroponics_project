@@ -43,6 +43,10 @@ git clone https://github.com/tesfawe/se4iot_hydroponics_project.git
 cd se4iot_hydroponics_project
 ```
 
+Copy `.env.example` to `.env` and fill in the values.
+If you are not sure how to get your Telegram bot token and Telegram chat ID, [go to Telegram Alerts](#telegram-alerts).
+
+
 Start all services with Docker Compose:
 
 ```bash
@@ -121,36 +125,37 @@ Sample payload:
 
 ### 1. Create a Bot
 
-1. Open Telegram → search `@BotFather`
-2. `/newbot` → choose a name & unique username
-3. Copy HTTP API token
+1. Open **Telegram** and search for **@BotFather**
+2. Start a chat with it and send the command `/newbot`
+3. Follow the prompts to:
+   - choose a display name for your bot
+   - choose a **unique username** (must end with `bot`)
+4. When BotFather finishes, it will show you an **HTTP API token**
+5. **Copy and save this token** - you will need it for configuration
+
 
 ### 2. Get Your Chat ID
 
-1. Start a conversation with your bot
+1. Start a conversation with your bot (send any message)
 2. Visit:  
 ```
 https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 ```
-3. Copy `result.chat.id` from JSON response
+3. Copy the value of `result.chat.id` from JSON response
 
-### 3. Node-RED Configuration
+### 3. Configure Environment Variables
+
+- Update the following variables in your `.env` file with your own values:
+
+  - TELEGRAM_BOT_TOKEN=your_bot_token_here
+  - TELEGRAM_CHAT_ID=your_chat_id_here
+
+
+### 4. Node-RED Configuration
 
 - Configure Telegram Sender node (`Alert Via Telegram` node):
-  - Name: `MyHydroponicsBot`
-  - Token: API token from BotFather
-
-- Update the CHAT_ID with your own Telegram Chat ID at the `Telegram_Formatter_v1` Function node:
-
-```javascript
-msg.payload = {
-    chatId: CHAT_ID,
-    type: "message",
-    content: telegramMessage,
-    options: { parse_mode: 'HTML' }
-};
-return msg;
-```
+  - Name: `MyHydroponicsBot` (Replace it with your own)
+  - Token: `${TELEGRAM_BOT_TOKEN}`
 
 ---
 
