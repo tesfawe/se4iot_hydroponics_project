@@ -43,8 +43,8 @@ git clone https://github.com/tesfawe/se4iot_hydroponics_project.git
 cd se4iot_hydroponics_project
 ```
 
-Copy `.env.example` to `.env` and fill in the values.
-If you are not sure how to get your Telegram bot token and Telegram chat ID, [go to Telegram Alerts](#telegram-alerts).
+- Copy `.env.example` to `.env` and fill in the values.
+  - If you are not sure how to get your Telegram bot token and Telegram chat ID, [go to Telegram Alerts](#telegram-alerts).
 
 
 Start all services with Docker Compose:
