@@ -1,6 +1,12 @@
 # Smart Hydroponics IoT System
 
-An end-to-end **IoT system for hydroponics** using MQTT, Node-RED, InfluxDB, Grafana, and Alert Telegram notifications. This system simulates hydroponic sensors, collects, processes, stores, and visualizes sensor data in real time.
+## Problem Statement
+
+Modern hydroponic farming requires continuous monitoring of critical environmental parameters (temperature, humidity, pH, water quality, light intensity) to optimize crop yields and prevent system failures. Manual monitoring is time-consuming and error-prone, and farmers need real-time alerts when parameters deviate from safe thresholds.
+
+## Solution
+
+An end-to-end **IoT system for hydroponics** that automates sensor data collection, real-time monitoring, and alerting. Using MQTT for communication, Node-RED for intelligent data processing, InfluxDB for time-series storage, Grafana for interactive dashboards, and Telegram for instant alerts, this system enables farmers to monitor their hydroponic systems in real time and respond immediately to critical conditions.
 
 ---
 
