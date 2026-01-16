@@ -85,5 +85,5 @@ services:
       CONFIG_FILE: ${CONFIG_FILE}
     depends_on:
       - mosquitto
-    profiles: ["manual"]  # Only start when explicitly specified
+    restart: always
 

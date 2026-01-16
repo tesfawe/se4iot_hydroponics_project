@@ -56,27 +56,8 @@ cd se4iot_hydroponics_project
 Start all services with Docker Compose:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
----
-
-### Optional Simulator Commands
-
-```bash
-# Build without starting
-docker-compose build simulator
-
-# Build and start
-docker-compose up -d --build simulator
-
-# Using manual profile
-docker-compose --profile manual stop simulator
-docker-compose --profile manual rm -f simulator
-docker-compose --profile manual build simulator
-docker-compose --profile manual create simulator
-docker-compose --profile manual start simulator
-```
-
 ---
 
 ## Node-RED Setup
@@ -170,7 +151,7 @@ https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 - Start all services:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 - Node-RED / Grafana permissions (only if necessary):
