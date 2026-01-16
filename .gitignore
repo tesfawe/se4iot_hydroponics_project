@@ -2,15 +2,6 @@
 node_modules/
 .npm/
 
-# Node-RED runtime-generated files
-*.backup
-*.json.backup
-.config.*
-
-# Credentials 
-flows_cred.json
-flows_cred.json.backup
-
 # IfluxDB data files
 influxdb/data/
 
