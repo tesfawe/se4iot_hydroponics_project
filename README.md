@@ -37,7 +37,7 @@ This IoT project simulates hydroponic sensor data such as:
 ![Hydroponics IoT Architecture](images/High-level_architecture.png)
 
 # Nodered Flow
-![Sensor Flow](images/Noered_flow.png)
+![Sensor Flow](images/Nodered_flow.png)
 ---
 
 ## Getting Started

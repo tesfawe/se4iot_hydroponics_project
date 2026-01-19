@@ -103,7 +103,7 @@
         "y": 280,
         "wires": [
             [
-                "a3d8aef7a68b5a60"
+                "d5d90a507b31e41d"
             ]
         ]
     },
@@ -125,22 +125,6 @@
         "wires": []
     },
     {
-        "id": "a3d8aef7a68b5a60",
-        "type": "json",
-        "z": "dbebeb7e05168c08",
-        "name": "",
-        "property": "payload",
-        "action": "",
-        "pretty": false,
-        "x": 310,
-        "y": 280,
-        "wires": [
-            [
-                "d5d90a507b31e41d"
-            ]
-        ]
-    },
-    {
         "id": "4804bbb78a7dbe08",
         "type": "influxdb out",
         "z": "dbebeb7e05168c08",
@@ -154,7 +138,7 @@
         "retentionPolicyV18Flux": "",
         "org": "${INFLUX_ORG}",
         "bucket": "${INFLUX_BUCKET}",
-        "x": 780,
+        "x": 620,
         "y": 220,
         "wires": []
     },
@@ -163,14 +147,14 @@
         "type": "function",
         "z": "dbebeb7e05168c08",
         "name": "Data_Validator_Splitter",
-        "func": "// --- 1. JSON Parse and Validation ---\nif (typeof msg.payload === \"string\") {\n    try { \n        msg.payload = JSON.parse(msg.payload); \n    } catch (e) { \n        node.error(\"Invalid JSON received from MQTT\", msg); \n        return [null, null]; \n    }\n}\n\n// --- 2. Required fields check ---\nif (!msg.payload || msg.payload.value == null || !msg.payload.location || msg.payload.timestamp == null || !msg.payload.sensor_id) {\n    node.warn(\"Missing critical required fields.\");\n    return [null, null];\n}\n\nconst value = parseFloat(msg.payload.value); \nconst ts_ms = Number(msg.payload.timestamp);\n\nif (isNaN(value) || isNaN(ts_ms)) {\n    node.warn(\"Invalid numerical value or timestamp found.\");\n    return [null, null];\n}\n\n// --- 3. Extract sensor info from topic ---\nconst parts = (msg.topic || \"\").split('/').filter(x => x.trim() !== \"\");\nconst domain = parts[0] || \"unknown\";\nconst sensor_type = parts[2] || \"unknown\"; \n\n// --- 4. Threshold table per sensor type ---\nconst THRESHOLDS = {\n    temperature: { min: 18.0, max: 27.0 },\n    humidity: { min: 40.0, max: 60.0 },\n    water_ph: { min: 5.5, max: 6.5 },\n    ec: { min: 1.5, max: 2.5 },\n    water_temperature: { min: 18.0, max: 24.0 },\n    light: { min: 600, max: 1200 }\n};\n\n// --- 5. Check if value exceeds thresholds ---\nlet alertDataMsg = null;\nconst threshold = THRESHOLDS[sensor_type];\n\nif (threshold && (value < threshold.min || value > threshold.max)) {\n    alertDataMsg = {\n        payload: {\n            domain: \"Smart Agriculture\",\n            sensor: sensor_type,\n            sensor_id: msg.payload.sensor_id,\n            location: msg.payload.location,\n            value: value,\n            min: threshold.min,\n            max: threshold.max,\n            timestamp: new Date().toISOString(),\n            alert: value < threshold.min ? \"below_min\" : \"above_max\"\n        }\n    };\n}\n\n// --- 6. Prepare InfluxDB payload ---\nconst influxPayload = [\n    { value: value, time: ts_ms }, // Fields\n    { sensor_type: sensor_type, location: msg.payload.location, sensor_id: msg.payload.sensor_id, domain: domain } // Tags\n];\n\nmsg.payload = influxPayload;\nmsg.measurement = \"environment_readings\";\n\n// Output 1: InfluxDB data\n// Output 2: alert data (null if within thresholds)\nreturn [msg, alertDataMsg];\n",
+        "func": "// JSON Parse and Validation ---\nif (typeof msg.payload === \"string\") {\n    try { \n        msg.payload = JSON.parse(msg.payload); \n    } catch (e) { \n        node.error(\"Invalid JSON received from MQTT\", msg); \n        return [null, null]; \n    }\n}\n\n// Required fields check ---\nif (!msg.payload || msg.payload.value == null || !msg.payload.location || msg.payload.timestamp == null || !msg.payload.sensor_id) {\n    node.warn(\"Missing critical required fields.\");\n    return [null, null];\n}\n\nconst value = parseFloat(msg.payload.value); \nconst ts_ms = Number(msg.payload.timestamp);\n\nif (isNaN(value) || isNaN(ts_ms)) {\n    node.warn(\"Invalid numerical value or timestamp found.\");\n    return [null, null];\n}\n\n// Extract sensor info from topic ---\nconst parts = (msg.topic || \"\").split('/').filter(x => x.trim() !== \"\");\nconst domain = parts[0] || \"unknown\";\nconst sensor_type = parts[2] || \"unknown\"; \n\n// Threshold table per sensor type ---\nconst THRESHOLDS = {\n    temperature: { min: 18.0, max: 27.0 },\n    humidity: { min: 40.0, max: 60.0 },\n    water_ph: { min: 5.5, max: 6.5 },\n    ec: { min: 1.5, max: 2.5 },\n    water_temperature: { min: 18.0, max: 24.0 },\n    light: { min: 600, max: 1200 }\n};\n\n// Check if value exceeds thresholds ---\nlet alertDataMsg = null;\nconst threshold = THRESHOLDS[sensor_type];\n\nif (threshold && (value < threshold.min || value > threshold.max)) {\n    alertDataMsg = {\n        payload: {\n            domain: \"Smart Agriculture\",\n            sensor: sensor_type,\n            sensor_id: msg.payload.sensor_id,\n            location: msg.payload.location,\n            value: value,\n            min: threshold.min,\n            max: threshold.max,\n            timestamp: new Date().toISOString(),\n            alert: value < threshold.min ? \"below_min\" : \"above_max\"\n        }\n    };\n}\n\n// Prepare InfluxDB payload ---\nconst influxPayload = [\n    { value: value, time: ts_ms }, // Fields\n    { sensor_type: sensor_type, location: msg.payload.location, sensor_id: msg.payload.sensor_id, domain: domain } // Tags\n];\n\nmsg.payload = influxPayload;\nmsg.measurement = \"environment_readings\";\n\n// Output 1: InfluxDB data\n// Output 2: alert data (null if within thresholds)\nreturn [msg, alertDataMsg];\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 520,
+        "x": 380,
         "y": 280,
         "wires": [
             [
@@ -195,8 +179,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 760,
-        "y": 140,
+        "x": 620,
+        "y": 160,
         "wires": []
     },
     {

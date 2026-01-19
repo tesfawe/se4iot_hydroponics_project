@@ -103,7 +103,7 @@
         "y": 280,
         "wires": [
             [
-                "a3d8aef7a68b5a60"
+                "d5d90a507b31e41d"
             ]
         ]
     },
@@ -125,22 +125,6 @@
         "wires": []
     },
     {
-        "id": "a3d8aef7a68b5a60",
-        "type": "json",
-        "z": "dbebeb7e05168c08",
-        "name": "",
-        "property": "payload",
-        "action": "",
-        "pretty": false,
-        "x": 310,
-        "y": 280,
-        "wires": [
-            [
-                "d5d90a507b31e41d"
-            ]
-        ]
-    },
-    {
         "id": "4804bbb78a7dbe08",
         "type": "influxdb out",
         "z": "dbebeb7e05168c08",
@@ -154,7 +138,7 @@
         "retentionPolicyV18Flux": "",
         "org": "${INFLUX_ORG}",
         "bucket": "${INFLUX_BUCKET}",
-        "x": 780,
+        "x": 620,
         "y": 220,
         "wires": []
     },
@@ -170,7 +154,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 520,
+        "x": 380,
         "y": 280,
         "wires": [
             [
@@ -195,8 +179,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 760,
-        "y": 140,
+        "x": 620,
+        "y": 160,
         "wires": []
     },
     {
