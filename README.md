@@ -233,10 +233,4 @@ All services run on `localhost` and are **not exposed to public networks**.
 ## Gauge Dashboard
 ![Gauge Dashboard](images/Gauge_dashboard.png)
 
-
-Comments:
- - make the value threshold for Telegram notification Dynamic
- - make the Grafana dashboards to load dynamic if something new added
- - make the units to load from env / config dynamically
- - move the config file to the parent directory
  
