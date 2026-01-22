@@ -45,18 +45,6 @@ sensors:
       min: 600
       max: 1200
 
-  gas:
-    unit: "ppm"
-    thresholds:
-      min: 250
-      max: 800
-  
-  co2: 
-    unit: "ppm"
-    thresholds:
-      min: 250
-      max: 650
-
 
 # Simulator-only section
 simulator:
@@ -96,14 +84,4 @@ simulator:
       base: 900
       fluctuation: 300
       ids: ["001", "002"]
-
-    gas:
-      base: 400
-      fluctuation: 150
-      ids: ["001"]
-    
-    co2:
-      base: 450
-      fluctuation: 200
-      ids: ["001"]
 
