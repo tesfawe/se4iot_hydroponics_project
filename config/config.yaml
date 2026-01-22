@@ -1,0 +1,109 @@
+# Node-RED and Grafana configuration
+# min and max values are used for alerting and visualization purposes.
+# absolute_min and absolute_max define the physical limits of the sensors. Used for Grafana gauge dashboards.
+# example: normal ph values are between 5.5 and 6.5, but the sensor can read from 0 to 14.
+
+sensors:
+  temperature:
+    unit: "°C"
+    thresholds:
+      min: 18.0
+      max: 27.0
+
+  humidity:
+    unit: "%"
+    thresholds:
+      min: 40.0
+      max: 60.0
+
+  water_ph:
+    unit: "pH"
+    thresholds:
+      min: 5.5
+      max: 6.5
+      absolute_min: 0
+      absolute_max: 14
+
+  ec:
+    unit: "mS/cm"
+    thresholds:
+      min: 1.5
+      max: 2.5
+      absolute_max: 4.0
+      absolute_min: 0.0
+
+  water_temperature:
+    unit: "°C"
+    thresholds:
+      min: 18.0
+      max: 24.0
+
+
+  light:
+    unit: "µmol/m²/s"
+    thresholds:
+      min: 600
+      max: 1200
+
+  gas:
+    unit: "ppm"
+    thresholds:
+      min: 250
+      max: 800
+  
+  co2: 
+    unit: "ppm"
+    thresholds:
+      min: 250
+      max: 650
+
+
+# Simulator-only section
+simulator:
+  greenhouses:
+    - greenhouse1
+    - greenhouse2
+    - greenhouse3
+    - greenhouse4
+
+  sensors:
+    temperature:
+      base: 22.5
+      fluctuation: 4.5
+      ids: ["001", "002"]
+
+    humidity:
+      base: 50.0
+      fluctuation: 10.0
+      ids: ["001"]
+
+    water_ph:
+      base: 6.0
+      fluctuation: 0.5
+      ids: ["001", "002"]
+
+    ec:
+      base: 2.0
+      fluctuation: 0.5
+      ids: ["001", "002"]
+
+    water_temperature:
+      base: 21.0
+      fluctuation: 3.0
+      ids: ["001", "002"]
+
+    light:
+      base: 900
+      fluctuation: 300
+      ids: ["001", "002"]
+
+    gas:
+      base: 400
+      fluctuation: 150
+      ids: ["001"]
+    
+    co2:
+      base: 450
+      fluctuation: 200
+      ids: ["001"]
+

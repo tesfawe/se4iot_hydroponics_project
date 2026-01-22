@@ -129,7 +129,7 @@
         "type": "influxdb out",
         "z": "dbebeb7e05168c08",
         "influxdb": "a49a3d61af2dce54",
-        "name": "influxDB",
+        "name": "influxDB Val",
         "measurement": "environment_readings",
         "precision": "",
         "retentionPolicy": "",
@@ -138,7 +138,7 @@
         "retentionPolicyV18Flux": "",
         "org": "${INFLUX_ORG}",
         "bucket": "${INFLUX_BUCKET}",
-        "x": 620,
+        "x": 630,
         "y": 220,
         "wires": []
     },
@@ -147,7 +147,7 @@
         "type": "function",
         "z": "dbebeb7e05168c08",
         "name": "Data_Validator_Splitter",
-        "func": "// JSON Parse and Validation ---\nif (typeof msg.payload === \"string\") {\n    try { \n        msg.payload = JSON.parse(msg.payload); \n    } catch (e) { \n        node.error(\"Invalid JSON received from MQTT\", msg); \n        return [null, null]; \n    }\n}\n\n// Required fields check ---\nif (!msg.payload || msg.payload.value == null || !msg.payload.location || msg.payload.timestamp == null || !msg.payload.sensor_id) {\n    node.warn(\"Missing critical required fields.\");\n    return [null, null];\n}\n\nconst value = parseFloat(msg.payload.value); \nconst ts_ms = Number(msg.payload.timestamp);\n\nif (isNaN(value) || isNaN(ts_ms)) {\n    node.warn(\"Invalid numerical value or timestamp found.\");\n    return [null, null];\n}\n\n// Extract sensor info from topic ---\nconst parts = (msg.topic || \"\").split('/').filter(x => x.trim() !== \"\");\nconst domain = parts[0] || \"unknown\";\nconst sensor_type = parts[2] || \"unknown\"; \n\n// Threshold table per sensor type ---\nconst THRESHOLDS = {\n    temperature: { min: 18.0, max: 27.0 },\n    humidity: { min: 40.0, max: 60.0 },\n    water_ph: { min: 5.5, max: 6.5 },\n    ec: { min: 1.5, max: 2.5 },\n    water_temperature: { min: 18.0, max: 24.0 },\n    light: { min: 600, max: 1200 }\n};\n\n// Check if value exceeds thresholds ---\nlet alertDataMsg = null;\nconst threshold = THRESHOLDS[sensor_type];\n\nif (threshold && (value < threshold.min || value > threshold.max)) {\n    alertDataMsg = {\n        payload: {\n            domain: \"Smart Agriculture\",\n            sensor: sensor_type,\n            sensor_id: msg.payload.sensor_id,\n            location: msg.payload.location,\n            value: value,\n            min: threshold.min,\n            max: threshold.max,\n            timestamp: new Date().toISOString(),\n            alert: value < threshold.min ? \"below_min\" : \"above_max\"\n        }\n    };\n}\n\n// Prepare InfluxDB payload ---\nconst influxPayload = [\n    { value: value, time: ts_ms }, // Fields\n    { sensor_type: sensor_type, location: msg.payload.location, sensor_id: msg.payload.sensor_id, domain: domain } // Tags\n];\n\nmsg.payload = influxPayload;\nmsg.measurement = \"environment_readings\";\n\n// Output 1: InfluxDB data\n// Output 2: alert data (null if within thresholds)\nreturn [msg, alertDataMsg];\n",
+        "func": "// JSON Parse and Validation ---\nif (typeof msg.payload === \"string\") {\n    try { \n        msg.payload = JSON.parse(msg.payload); \n    } catch (e) { \n        node.error(\"Invalid JSON received from MQTT\", msg); \n        return [null, null]; \n    }\n}\n\nif (!msg.payload || msg.payload.value == null || !msg.payload.location || msg.payload.timestamp == null || !msg.payload.sensor_id) {\n    node.warn(\"Missing critical required fields.\");\n    return [null, null];\n}\n\nconst value = parseFloat(msg.payload.value); \nconst ts_ms = Number(msg.payload.timestamp);\n\nif (isNaN(value) || isNaN(ts_ms)) {\n    node.warn(\"Invalid numerical value or timestamp found.\");\n    return [null, null];\n}\n\n// Extract sensor info from topic: /DOMAIN/location/sensor_type/sensor_id\nconst parts = (msg.topic || \"\").split(\"/\").filter(x => x.trim() !== \"\");\nconst domain = parts[0] || \"unknown\";\nconst sensor_type = parts[2] || msg.payload.sensor_name || \"unknown\";\nconst unit = msg.payload.unit || \"unknown\";\n\n// Get config\nconst config = global.get(\"config\") || {};\nconst sensorsConfig = config.sensors || {};\nconst sensorConfig = sensorsConfig[sensor_type] || {};\nconst thresholds = sensorConfig.thresholds || null;\n\nlet alertDataMsg = null;\n\n// Threshold check if available\nif (thresholds && thresholds.min != null && thresholds.max != null) {\n    const tmin = Number(thresholds.min);\n    const tmax = Number(thresholds.max);\n\n    if (!isNaN(tmin) && !isNaN(tmax) && (value < tmin || value > tmax)) {\n        alertDataMsg = {\n            payload: {\n                domain: \"Smart Agriculture\",\n                sensor: sensor_type,\n                sensor_id: msg.payload.sensor_id,\n                location: msg.payload.location,\n                value: value,\n                min: tmin,\n                max: tmax,\n                unit: unit,\n                timestamp: new Date().toISOString(),\n                alert: value < tmin ? \"below_min\" : \"above_max\"\n            }\n        };\n    }\n} else {\n    node.debug(`No thresholds configured for sensor type '${sensor_type}'`);\n}\n\n// Prepare InfluxDB payload\nconst influxPayload = [\n    { value: value, time: ts_ms }, // fields\n    {\n        sensor_type: sensor_type,\n        location: msg.payload.location,\n        sensor_id: msg.payload.sensor_id,\n        domain: domain,\n        unit: unit\n    } // tags\n];\n\nmsg.payload = influxPayload;\nmsg.measurement = \"environment_readings\";\n\n// Output 1: InfluxDB data\n// Output 2: alert data (null if within thresholds or missing)\nreturn [msg, alertDataMsg];\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -202,7 +202,7 @@
         "type": "function",
         "z": "dbebeb7e05168c08",
         "name": "Telegram_Formatter_v1",
-        "func": "// Read chat ID from environment\nconst TELEGRAM_CHAT_ID = env.get(\"TELEGRAM_CHAT_ID\");\n\nif (!TELEGRAM_CHAT_ID) {\n    node.error(\"TELEGRAM_CHAT_ID is not set in environment variables\");\n    return null;\n}\n\nconst CHAT_ID = Number(TELEGRAM_CHAT_ID);\n\nlet alertPayload = msg.payload;\n\nif (!alertPayload) {\n    return null;\n}\n\n// Determine alert description\nlet conditionString = \"\";\nlet detailsString = \"\";\n\nif (alertPayload.alert === \"above_max\") {\n    conditionString = `Value is ${alertPayload.value} (Threshold > ${alertPayload.max})`;\n    detailsString = \"Sensor exceeded maximum threshold. Immediate action may be required.\";\n} else if (alertPayload.alert === \"below_min\") {\n    conditionString = `Value is ${alertPayload.value} (Threshold < ${alertPayload.min})`;\n    detailsString = \"Sensor fell below minimum threshold. Immediate action may be required.\";\n} else {\n    conditionString = `Value is ${alertPayload.value} (Threshold unknown)`;\n    detailsString = \"Check sensor readings.\";\n}\n\n// Build Telegram message (HTML-safe)\nlet telegramMessage = `<b>HYDRO ALERT - CRITICAL</b>\\n\\n`;\ntelegramMessage += `<b>DOMAIN:</b> ${alertPayload.domain}\\n`;\ntelegramMessage += `<b>LOCATION:</b> ${alertPayload.location}\\n`;\ntelegramMessage += `<b>SENSOR:</b> ${alertPayload.sensor}\\n`;\ntelegramMessage += `<b>SENSOR_ID:</b> ${alertPayload.sensor_id}\\n`;\ntelegramMessage += `<b>CONDITION:</b> ${conditionString}\\n`;\ntelegramMessage += `<b>DETAILS:</b> ${detailsString}\\n`;\ntelegramMessage += `<i>Time: ${alertPayload.timestamp.substring(11, 19)} UTC</i>`;\n\n// Output to Telegram sender node\nmsg.payload = {\n    chatId: CHAT_ID,\n    type: \"message\",\n    content: telegramMessage,\n    options: {\n        parse_mode: \"HTML\"\n    }\n};\n\nreturn msg;\n",
+        "func": "// Simple HTML escape helper\nfunction escapeHtml(str) {\n    return String(str)\n        .replace(/&/g, \"&amp;\")\n        .replace(/</g, \"&lt;\")\n        .replace(/>/g, \"&gt;\");\n}\n\n// Read chat ID from environment\nconst TELEGRAM_CHAT_ID = env.get(\"TELEGRAM_CHAT_ID\");\n\nif (!TELEGRAM_CHAT_ID) {\n    node.error(\"TELEGRAM_CHAT_ID is not set in environment variables\");\n    return null;\n}\n\nconst CHAT_ID = Number(TELEGRAM_CHAT_ID);\n\nlet alertPayload = msg.payload;\nif (!alertPayload) {\n    return null;\n}\n\n// Pre-escape all dynamic values\nconst valueStr    = escapeHtml(alertPayload.value);\nconst minStr      = escapeHtml(alertPayload.min);\nconst maxStr      = escapeHtml(alertPayload.max);\nconst domainStr   = escapeHtml(alertPayload.domain);\nconst locationStr = escapeHtml(alertPayload.location);\nconst sensorStr   = escapeHtml(alertPayload.sensor);\nconst sensorIdStr = escapeHtml(alertPayload.sensor_id);\n\n// Determine alert description (HTML-safe)\nlet conditionString = \"\";\nlet detailsString = \"\";\n\nif (alertPayload.alert === \"above_max\") {\n    // Use &gt; for \">\" in HTML\n    conditionString = `Value is ${valueStr} (Threshold &gt; ${maxStr})`;\n    detailsString = \"Sensor exceeded maximum threshold. Immediate action may be required.\";\n} else if (alertPayload.alert === \"below_min\") {\n    // Use &lt; for \"<\" in HTML\n    conditionString = `Value is ${valueStr} (Threshold &lt; ${minStr})`;\n    detailsString = \"Sensor fell below minimum threshold. Immediate action may be required.\";\n} else {\n    conditionString = `Value is ${valueStr} (Threshold unknown)`;\n    detailsString = \"Check sensor readings.\";\n}\n\n// Time formatting (keep as plain text)\nlet timePart = \"\";\ntry {\n    timePart = alertPayload.timestamp.substring(11, 19); // HH:MM:SS from ISO string\n} catch (e) {\n    timePart = new Date().toISOString().substring(11, 19);\n}\n\n// Build Telegram message \nlet telegramMessage = `<b>HYDRO ALERT - CRITICAL</b>\\n\\n`;\ntelegramMessage += `<b>DOMAIN:</b> ${domainStr}\\n`;\ntelegramMessage += `<b>LOCATION:</b> ${locationStr}\\n`;\ntelegramMessage += `<b>SENSOR:</b> ${sensorStr}\\n`;\ntelegramMessage += `<b>SENSOR_ID:</b> ${sensorIdStr}\\n`;\ntelegramMessage += `<b>CONDITION:</b> ${conditionString}\\n`;\ntelegramMessage += `<b>DETAILS:</b> ${escapeHtml(detailsString)}\\n`;\ntelegramMessage += `<i>Time: ${escapeHtml(timePart)} UTC</i>`;\n\n// Output to Telegram sender node\nmsg.payload = {\n    chatId: CHAT_ID,\n    type: \"message\",\n    content: telegramMessage,\n    options: {\n        parse_mode: \"HTML\",\n        chat_id: CHAT_ID,\n        text: telegramMessage\n    }\n};\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -217,5 +217,132 @@
                 "34c3ffc3cdad1d67"
             ]
         ]
+    },
+    {
+        "id": "814dacd92910d2db",
+        "type": "inject",
+        "z": "dbebeb7e05168c08",
+        "name": "Load config.yaml",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 500,
+        "wires": [
+            [
+                "fedb04cffa6b05ab"
+            ]
+        ]
+    },
+    {
+        "id": "43a9c1ea8f96ef70",
+        "type": "yaml",
+        "z": "dbebeb7e05168c08",
+        "property": "payload",
+        "name": "YAML → JSON",
+        "x": 420,
+        "y": 580,
+        "wires": [
+            [
+                "957b94e6e36834d0",
+                "c85ad67004ca1864"
+            ]
+        ]
+    },
+    {
+        "id": "957b94e6e36834d0",
+        "type": "change",
+        "z": "dbebeb7e05168c08",
+        "name": "Set global.config",
+        "rules": [
+            {
+                "t": "set",
+                "p": "config",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 800,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fedb04cffa6b05ab",
+        "type": "file in",
+        "z": "dbebeb7e05168c08",
+        "name": "Read config.yaml",
+        "filename": "/data/config/config.yaml",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 350,
+        "y": 500,
+        "wires": [
+            [
+                "43a9c1ea8f96ef70"
+            ]
+        ]
+    },
+    {
+        "id": "c85ad67004ca1864",
+        "type": "function",
+        "z": "dbebeb7e05168c08",
+        "name": "Update_Thresholds_In_Influx",
+        "func": "const config = msg.payload || {};\nconst sensors = config.sensors || {};\n\n// hash so we don't rewrite identical thresholds\nconst newHash = JSON.stringify(sensors);\nconst prevHash = global.get(\"thresholds_hash\");\nif (prevHash === newHash) {\n    return null;\n}\nglobal.set(\"thresholds_hash\", newHash);\n\nconst points = [];\n\nfor (const [sensorName, sensorCfg] of Object.entries(sensors)) {\n    const t = sensorCfg.thresholds || {};\n\n    const fields = {};\n\n    // 1) Gauge scale (optional but independent)\n    if (t.absolute_min != null && t.absolute_max != null) {\n        fields.absolute_min = Number(t.absolute_min);\n        fields.absolute_max = Number(t.absolute_max);\n    }\n\n    // 2) Safe range / thresholds (optional)\n    if (t.min != null && t.max != null) {\n        fields.min = Number(t.min);\n        fields.max = Number(t.max);\n    }\n\n    // If we have no fields at all, skip this sensor\n    if (Object.keys(fields).length === 0) continue;\n\n    const tags = {\n        sensor_type: sensorName\n    };\n\n    // Depending on your Influx node, you may need this structure:\n    points.push([fields, tags]);\n}\n\n// If absolutely nothing to write, exit\nif (points.length === 0) {\n    node.warn(\"No thresholds found in config.yaml to write to Influx.\");\n    return null;\n}\n\nmsg.payload = points;\nmsg.measurement = \"sensor_thresholds\";\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 660,
+        "wires": [
+            [
+                "4d88d57a0105a159"
+            ]
+        ]
+    },
+    {
+        "id": "4d88d57a0105a159",
+        "type": "influxdb out",
+        "z": "dbebeb7e05168c08",
+        "influxdb": "a49a3d61af2dce54",
+        "name": "influxDB TH",
+        "measurement": "sensor_thresholds",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "${INFLUX_ORG}",
+        "bucket": "${INFLUX_BUCKET}",
+        "x": 810,
+        "y": 660,
+        "wires": []
     }
 ]

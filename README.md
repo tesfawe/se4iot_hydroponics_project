@@ -146,6 +146,51 @@ https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 
 ---
 
+## Dynamic Configuration (config/config.yaml)
+
+The system uses a single configuration file:
+
+```
+config.yaml
+```
+
+This file defines:
+
+- Alert thresholds (min, max)
+- Physical sensor limits (absolute_min, absolute_max)
+- Greenhouse and sensor mapping
+- Simulator values (base, fluctuation, sensor IDs)
+
+If you want to configure anything in the system, edit config.yaml.
+
+### How it Works
+![config flow](images/config_flow.png)
+A Node-RED flow automatically checks the file every 60 seconds. When it detects changes:
+
+1. The file is reloaded
+2. YAML is converted to JSON
+3. Values are stored in global.config
+4. Thresholds (min, max, absolute_min, absolute_max) are written to InfluxDB (only if changed)
+
+### Grafana Updates Automatically
+
+Grafana reads these threshold values directly from InfluxDB, so:
+
+- Dashbords min/max threshold update automatically
+- Gauge absolute_min/absolute_max limits update automatically
+- No dashboard editing is needed
+- No container restart or rebuild is required
+
+### How to Update Configuration
+
+1. Open config.yaml
+2. Modify the values
+3. Save the file
+
+The system updates automatically—no redeploy, no restart, no manual Grafana changes.
+
+---
+
 ## Docker Commands Summary
 
 - Start all services:
@@ -189,3 +234,9 @@ All services run on `localhost` and are **not exposed to public networks**.
 ![Gauge Dashboard](images/Gauge_dashboard.png)
 
 
+Comments:
+ - make the value threshold for Telegram notification Dynamic
+ - make the Grafana dashboards to load dynamic if something new added
+ - make the units to load from env / config dynamically
+ - move the config file to the parent directory
+ 
